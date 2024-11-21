@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Chat</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        margin: 5px 0;
+      }
+      button {
+        margin-left: 10px;
+        color: white;
+        background-color: red;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: darkred;
+      }
+      .logout {
+        background-color: blue;
+        margin-top: 10px;
+      }
+      .logout:hover {
+        background-color: darkblue;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Chat</h1>
+
+    <div id="auth">
+      <h2>ログイン</h2>
+      <input type="text" id="username" placeholder="ユーザー名" />
+      <input type="password" id="password" placeholder="パスワード" />
+      <button onclick="login()">ログイン</button>
+      <button onclick="register()">登録</button>
+      <p id="auth-status" style="color: red"></p>
+    </div>
+
+    <div id="chat" style="display: none">
+      <h2>チャット</h2>
+      <input type="text" id="chat-username" placeholder="ユーザー名" disabled />
+      <input type="text" id="message" placeholder="メッセージ" />
+      <button onclick="sendMessage()">送信</button>
+      <button class="logout" onclick="logout()">ログアウト</button>
+      <ul id="messages"></ul>
+    </div>
+
+    <script>
+      let ws;
+      let token = "";
+
+      window.onload = () => {
+        token = localStorage.getItem("token"); // トークンを取得
+        if (token) {
+          document.getElementById("auth").style.display = "none";
+          document.getElementById("chat").style.display = "block";
+          connectWebSocket();
+          loadMessages();
+        } else {
+          document.getElementById("auth").style.display = "block";
+          document.getElementById("chat").style.display = "none";
+        }
+      };
+
+      async function login() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        const response = await fetch("http://localhost:8080/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          token = data.token;
+          localStorage.setItem("token", token); // トークンを保存
+
+          document.getElementById("chat-username").value = username;
+          document.getElementById("auth").style.display = "none";
+          document.getElementById("chat").style.display = "block";
+
+          connectWebSocket();
+          loadMessages();
+        } else {
+          const errorText = await response.text();
+          document.getElementById(
+            "auth-status"
+          ).textContent = `ログイン失敗: ${errorText}`;
+        }
+      }
+
+      async function register() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        const response = await fetch("http://localhost:8080/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (response.ok) {
+          alert("ユーザー登録成功！ログインしてください。");
+        } else {
+          alert("登録失敗");
+        }
+      }
+
+      function connectWebSocket() {
+        ws = new WebSocket("ws://localhost:8080/ws");
+
+        ws.onopen = () => {
+          console.log("WebSocket接続が確立されました");
+        };
+
+        ws.onmessage = (event) => {
+          const msg = JSON.parse(event.data);
+          addMessageToUI(msg.id, msg.username, msg.text);
+        };
+
+        ws.onclose = () => {
+          console.log("WebSocket接続が切断されました");
+        };
+
+        ws.onerror = (error) => {
+          console.error("WebSocketエラー:", error);
+        };
+      }
+
+      async function loadMessages() {
+        const response = await fetch("http://localhost:8080/messages", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        if (response.ok) {
+          const messages = await response.json();
+          messages.forEach((msg) =>
+            addMessageToUI(msg.id, msg.username, msg.text)
+          );
+        } else {
+          console.error("メッセージ取得エラー");
+        }
+      }
+
+      function addMessageToUI(id, username, text) {
+        const li = document.createElement("li");
+        li.textContent = `${username}: ${text}`;
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "削除";
+        deleteButton.onclick = () => deleteMessage(id);
+
+        li.appendChild(deleteButton);
+        document.getElementById("messages").appendChild(li);
+      }
+
+      function sendMessage() {
+        const username = document.getElementById("chat-username").value;
+        const message = document.getElementById("message").value;
+
+        if (username && message) {
+          const msg = { username, text: message };
+          ws.send(JSON.stringify(msg));
+          document.getElementById("message").value = "";
+        } else {
+          alert("ユーザー名とメッセージを入力してください");
+        }
+      }
+
+      async function deleteMessage(id) {
+        if (!id) {
+          alert("削除するメッセージIDが指定されていません");
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `http://localhost:8080/delete?id=${id}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            alert("メッセージを削除しました");
+            location.reload();
+          } else {
+            const errorText = await response.text();
+            alert(`削除失敗: ${errorText}`);
+          }
+        } catch (error) {
+          console.error("削除エラー:", error);
+        }
+      }
+
+      function logout() {
+        localStorage.removeItem("token"); // トークンを削除
+        location.reload(); // ページをリロードしてログイン画面へ
+      }
+    </script>
+  </body>
+</html>
