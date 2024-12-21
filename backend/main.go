@@ -6,6 +6,9 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"os"
+	"fmt"
+
 
 	_ "github.com/lib/pq" // PostgreSQLドライバをインポート
 	"github.com/gorilla/websocket"
@@ -35,20 +38,30 @@ var clients = make(map[*websocket.Conn]bool) // 接続中のクライアント
 var broadcast = make(chan Message)          // ブロードキャスト用チャネル
 
 func main() {
-	// データベース接続
-	var err error
-	db, err = sql.Open("postgres", "postgres://ikedakotarou@localhost:5432/chatapp?sslmode=disable")
+	// 環境変数を取得
+	host := os.Getenv("DATABASE_HOST")
+	port := os.Getenv("DATABASE_PORT")
+	user := os.Getenv("DATABASE_USER")
+	password := os.Getenv("DATABASE_PASSWORD")
+	dbname := os.Getenv("DATABASE_NAME")
+
+	// 接続文字列を作成
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
+
+	// データベースに接続
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal("データベース接続エラー:", err)
+		log.Fatalf("データベース接続エラー: %v", err)
 	}
 	defer db.Close()
 
-	// データベース接続確認
+	// 接続確認
 	err = db.Ping()
 	if err != nil {
-		log.Fatal("データベースに接続できません:", err)
+		log.Fatalf("データベースに接続できません: %v", err)
 	}
-	log.Println("データベース接続成功")
+
+	fmt.Println("データベースに正常に接続しました")
 
 	// ルーティング
 	mux := http.NewServeMux()
