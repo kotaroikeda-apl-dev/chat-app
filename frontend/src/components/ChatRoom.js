@@ -1,7 +1,7 @@
 import React from 'react';
 
 const ChatRoom = ({ messages, onDeleteMessage }) => {
-  // messagesが空配列またはnullの場合のガード処理
+  // メッセージがない場合の表示
   if (!messages || messages.length === 0) {
     return (
       <div className="bg-white shadow-md rounded-lg p-4 mb-6">
@@ -21,7 +21,15 @@ const ChatRoom = ({ messages, onDeleteMessage }) => {
               <strong className="text-blue-500">{msg.username}</strong>: {msg.text}
             </span>
             <button
-              onClick={() => onDeleteMessage(msg.id)}
+              onClick={() => {
+                console.log('削除対象メッセージID:', msg.id); // デバッグ用ログ
+                if (!msg.id) {
+                  console.error('無効なメッセージID: ', msg);
+                  alert('削除に失敗しました: 無効なメッセージIDです');
+                } else if (window.confirm('このメッセージを削除しますか？')) {
+                  onDeleteMessage(msg.id);
+                }
+              }}
               className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition"
             >
               削除

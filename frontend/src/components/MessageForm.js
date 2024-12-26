@@ -6,8 +6,8 @@ const MessageForm = ({ onSendMessage }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (message.trim()) {
-      onSendMessage(message);
-      setMessage('');
+      onSendMessage(message.trim()); // 親コンポーネントにメッセージを渡す
+      setMessage(''); // フォームをクリア
     }
   };
 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -28,6 +29,7 @@ type User struct {
 
 type Message struct {
 	ID        int    `json:"id"`
+	SpaceID   int    `json:"space_id"`
 	Username  string `json:"username"`
 	Text      string `json:"text"`
 	CreatedAt string `json:"created_at"`
@@ -114,7 +116,7 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 
 	_, err = db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", user.Username, user.Password)
 	if err != nil {
-		log.Printf("ユーザー登録エラー: %v", err) // エラー詳細をログに記録
+		log.Printf("ユーザー登録エラー: %v", err)
 		http.Error(w, "ユーザー登録に失敗しました", http.StatusInternalServerError)
 		return
 	}
@@ -158,7 +160,7 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, username, text, created_at FROM messages ORDER BY created_at ASC")
+	rows, err := db.Query("SELECT id, space_id, username, text, created_at FROM messages ORDER BY created_at ASC")
 	if err != nil {
 		http.Error(w, "メッセージの取得に失敗しました", http.StatusInternalServerError)
 		return
@@ -168,7 +170,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	var messages []Message
 	for rows.Next() {
 		var msg Message
-		err := rows.Scan(&msg.ID, &msg.Username, &msg.Text, &msg.CreatedAt)
+		err := rows.Scan(&msg.ID, &msg.SpaceID, &msg.Username, &msg.Text, &msg.CreatedAt)
 		if err != nil {
 			http.Error(w, "メッセージのパースに失敗しました", http.StatusInternalServerError)
 			return
@@ -181,42 +183,40 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteMessage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "無効なリクエストメソッドです", http.StatusMethodNotAllowed)
+	messageIDStr := r.URL.Query().Get("id")
+	spaceIDStr := r.URL.Query().Get("spaceId")
+
+	log.Printf("削除リクエスト - メッセージID: %s, スペースID: %s", messageIDStr, spaceIDStr)
+
+	if messageIDStr == "" || spaceIDStr == "" {
+		http.Error(w, "メッセージIDまたはスペースIDが指定されていません", http.StatusBadRequest)
 		return
 	}
 
-	// クエリパラメータからメッセージ ID を取得
-	messageID := r.URL.Query().Get("id")
-	if messageID == "" {
-		http.Error(w, "メッセージ ID が指定されていません", http.StatusBadRequest)
+	messageID, err := strconv.Atoi(messageIDStr)
+	if err != nil {
+		log.Printf("メッセージIDの変換エラー: %v", err)
+		http.Error(w, "無効なメッセージIDです", http.StatusBadRequest)
 		return
 	}
 
-	// データベースから特定のメッセージを削除
-	result, err := db.Exec("DELETE FROM messages WHERE id = $1", messageID)
+	spaceID, err := strconv.Atoi(spaceIDStr)
+	if err != nil {
+		log.Printf("スペースIDの変換エラー: %v", err)
+		http.Error(w, "無効なスペースIDです", http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec("DELETE FROM messages WHERE id = $1 AND space_id = $2", messageID, spaceID)
 	if err != nil {
 		log.Printf("メッセージ削除エラー: %v", err)
 		http.Error(w, "メッセージの削除に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
-	// 削除件数を確認
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		log.Printf("削除件数取得エラー: %v", err)
-		http.Error(w, "削除処理に問題が発生しました", http.StatusInternalServerError)
-		return
-	}
-
-	if rowsAffected == 0 {
-		http.Error(w, "指定されたメッセージが存在しません", http.StatusNotFound)
-		return
-	}
-
-	log.Printf("メッセージ削除成功: ID = %s", messageID)
+	log.Printf("メッセージ削除成功 - メッセージID: %d, スペースID: %d", messageID, spaceID)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("メッセージが削除されました"))
+	w.Write([]byte("メッセージ削除成功"))
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
@@ -228,13 +228,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	defer ws.Close()
 
 	clients[ws] = true
-	log.Println("クライアント接続:", ws.RemoteAddr())
-
 	for {
 		var msg Message
 		err := ws.ReadJSON(&msg)
 		if err != nil {
-			log.Println("クライアント切断:", err)
 			delete(clients, ws)
 			break
 		}
@@ -246,8 +243,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		_, err = db.Exec("INSERT INTO messages (username, text, created_at) VALUES ($1, $2, NOW())", msg.Username, msg.Text)
 		if err != nil {
 			log.Println("メッセージ保存エラー:", err)
-		} else {
-			log.Println("メッセージ保存成功")
 		}
 
 		broadcast <- msg
@@ -257,12 +252,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 func handleMessages() {
 	for {
 		msg := <-broadcast
-		log.Println("ブロードキャストするメッセージ:", msg)
-
 		for client := range clients {
 			err := client.WriteJSON(msg)
 			if err != nil {
-				log.Printf("クライアントへの送信エラー: %v", err)
 				client.Close()
 				delete(clients, client)
 			}
@@ -314,6 +306,7 @@ func getSpaces(w http.ResponseWriter, r *http.Request) {
 			CreatedAt string `json:"created_at"`
 		}
 		if err := rows.Scan(&space.ID, &space.Name, &space.CreatedAt); err != nil {
+			log.Printf("JSON デコードエラー: %v", err)
 			http.Error(w, "スペースデータのパースに失敗しました", http.StatusInternalServerError)
 			return
 		}
@@ -335,12 +328,15 @@ func createMessage(w http.ResponseWriter, r *http.Request) {
 		Username string `json:"username"`
 		Text     string `json:"text"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
+		log.Printf("JSONパースエラー: %v", err)
 		http.Error(w, "リクエストのパースに失敗しました", http.StatusBadRequest)
 		return
 	}
 
-	if msg.Text == "" || msg.Username == "" {
+	if msg.Text == "" || msg.Username == "" || msg.SpaceID == 0 {
+		log.Printf("不正なリクエスト: %+v", msg)
 		http.Error(w, "メッセージまたはユーザー名が空です", http.StatusBadRequest)
 		return
 	}
@@ -356,5 +352,5 @@ func createMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("メッセージが登録されました"))
+	json.NewEncoder(w).Encode(msg)
 }

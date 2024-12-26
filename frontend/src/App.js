@@ -51,30 +51,57 @@ const App = () => {
   };
 
   // メッセージ送信
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     if (!selectedSpace) {
       console.error('スペースが選択されていません');
       return;
     }
 
-    const user = localStorage.getItem('username') || '匿名ユーザー';
-    const newMessage = { username: user, text, spaceId: selectedSpace };
-    sendMessage(JSON.stringify(newMessage));
+    try {
+      const response = await fetch('http://localhost:8080/messages/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          space_id: selectedSpace,
+          username: username || '匿名ユーザー', // ユーザー名
+          text,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('メッセージ送信エラー:', errorText);
+        return;
+      }
+
+      const newMessage = await response.json();
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    } catch (error) {
+      console.error('通信エラー:', error);
+    }
   };
 
   // メッセージ削除
   const handleDeleteMessage = async (id) => {
+    if (!id || !selectedSpace) {
+      console.error('削除リクエストエラー: 無効なIDまたはスペース未選択');
+      alert('削除に失敗しました: 無効なメッセージIDまたはスペースIDです');
+      return;
+    }
+
+    console.log(`削除リクエスト - メッセージID: ${id}, スペースID: ${selectedSpace}`);
+
     try {
-      // 即時フロントエンド側のメッセージリストを更新
       setMessages((prev) => prev.filter((message) => message.id !== id));
 
-      // サーバーに削除リクエストを送信
       const response = await fetch(`http://localhost:8080/delete?id=${id}&spaceId=${selectedSpace}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        // 削除失敗時、エラーメッセージを表示
         const errorText = await response.text();
         console.error('メッセージ削除エラー:', errorText);
         alert(`削除に失敗しました: ${errorText}`);
