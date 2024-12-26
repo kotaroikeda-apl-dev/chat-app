@@ -10,14 +10,13 @@ const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [messages, setMessages] = useState([]);
-  const [selectedSpace, setSelectedSpace] = useState(null); // 選択中のスペース
-  const [showSpaceForm, setShowSpaceForm] = useState(false); // スペースフォームの表示状態
+  const [selectedSpace, setSelectedSpace] = useState(null);
+  const [showSpaceForm, setShowSpaceForm] = useState(false);
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     token && selectedSpace ? `ws://localhost:8080/ws?spaceId=${selectedSpace}` : null,
     { shouldReconnect: () => true }
   );
 
-  // メッセージを初期取得
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedSpace) return;
@@ -34,7 +33,6 @@ const App = () => {
     fetchMessages();
   }, [selectedSpace]);
 
-  // WebSocketで受信したメッセージを処理
   useEffect(() => {
     if (lastMessage !== null) {
       const newMessage = JSON.parse(lastMessage.data);
@@ -42,7 +40,6 @@ const App = () => {
     }
   }, [lastMessage]);
 
-  // 認証成功時の処理
   const handleAuthSuccess = (authToken, authUsername) => {
     setToken(authToken);
     setUsername(authUsername);
@@ -50,7 +47,6 @@ const App = () => {
     localStorage.setItem('username', authUsername);
   };
 
-  // メッセージ送信
   const handleSendMessage = async (text) => {
     if (!selectedSpace) {
       console.error('スペースが選択されていません');
@@ -66,7 +62,7 @@ const App = () => {
         },
         body: JSON.stringify({
           space_id: selectedSpace,
-          username: username || '匿名ユーザー', // ユーザー名
+          username: username || '匿名ユーザー',
           text,
         }),
       });
@@ -84,7 +80,6 @@ const App = () => {
     }
   };
 
-  // メッセージ削除
   const handleDeleteMessage = async (id) => {
     if (!id || !selectedSpace) {
       console.error('削除リクエストエラー: 無効なIDまたはスペース未選択');
@@ -114,7 +109,6 @@ const App = () => {
     }
   };
 
-  // ログアウト処理
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
@@ -122,9 +116,8 @@ const App = () => {
     setUsername('');
   };
 
-  // スペース作成完了時の処理
   const handleSpaceCreated = () => {
-    setShowSpaceForm(false); // スペースフォームを閉じる
+    setShowSpaceForm(false);
   };
 
   if (!token) {
@@ -136,7 +129,7 @@ const App = () => {
       <div className="max-w-lg w-full bg-white shadow-lg rounded-lg p-6">
         {!selectedSpace ? (
           <>
-            <div className="flex space-x-4 mb-4"> {/* ボタン間隔を調整 */}
+            <div className="flex space-x-4 mb-4">
               <button
                 onClick={handleLogout}
                 className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition"

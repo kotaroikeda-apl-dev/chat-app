@@ -22,12 +22,9 @@ const ChatRoom = ({ messages, onDeleteMessage }) => {
             </span>
             <button
               onClick={() => {
-                console.log('削除対象メッセージID:', msg.id); // デバッグ用ログ
-                if (!msg.id) {
-                  console.error('無効なメッセージID: ', msg);
-                  alert('削除に失敗しました: 無効なメッセージIDです');
-                } else if (window.confirm('このメッセージを削除しますか？')) {
-                  onDeleteMessage(msg.id);
+                console.log(`削除対象メッセージ:`, msg); // デバッグ用ログ
+                if (window.confirm('このメッセージを削除しますか？')) {
+                  onDeleteMessage(msg.id); // 正しいIDを渡す
                 }
               }}
               className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition"

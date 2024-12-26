@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -183,38 +182,23 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteMessage(w http.ResponseWriter, r *http.Request) {
-	messageIDStr := r.URL.Query().Get("id")
-	spaceIDStr := r.URL.Query().Get("spaceId")
+	messageID := r.URL.Query().Get("id")
+	spaceID := r.URL.Query().Get("spaceId")
 
-	log.Printf("削除リクエスト - メッセージID: %s, スペースID: %s", messageIDStr, spaceIDStr)
+	log.Printf("受信した削除リクエスト - メッセージID: %s, スペースID: %s", messageID, spaceID)
 
-	if messageIDStr == "" || spaceIDStr == "" {
+	if messageID == "" || spaceID == "" {
 		http.Error(w, "メッセージIDまたはスペースIDが指定されていません", http.StatusBadRequest)
 		return
 	}
 
-	messageID, err := strconv.Atoi(messageIDStr)
-	if err != nil {
-		log.Printf("メッセージIDの変換エラー: %v", err)
-		http.Error(w, "無効なメッセージIDです", http.StatusBadRequest)
-		return
-	}
-
-	spaceID, err := strconv.Atoi(spaceIDStr)
-	if err != nil {
-		log.Printf("スペースIDの変換エラー: %v", err)
-		http.Error(w, "無効なスペースIDです", http.StatusBadRequest)
-		return
-	}
-
-	_, err = db.Exec("DELETE FROM messages WHERE id = $1 AND space_id = $2", messageID, spaceID)
+	_, err := db.Exec("DELETE FROM messages WHERE id = $1 AND space_id = $2", messageID, spaceID)
 	if err != nil {
 		log.Printf("メッセージ削除エラー: %v", err)
 		http.Error(w, "メッセージの削除に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("メッセージ削除成功 - メッセージID: %d, スペースID: %d", messageID, spaceID)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("メッセージ削除成功"))
 }
@@ -324,6 +308,7 @@ func createMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var msg struct {
+		ID       int    `json:"id"`
 		SpaceID  int    `json:"space_id"`
 		Username string `json:"username"`
 		Text     string `json:"text"`
@@ -341,16 +326,18 @@ func createMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.Exec(
-		"INSERT INTO messages (space_id, username, text, created_at) VALUES ($1, $2, $3, NOW())",
+	var newID int
+	err := db.QueryRow(
+		"INSERT INTO messages (space_id, username, text, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id",
 		msg.SpaceID, msg.Username, msg.Text,
-	)
+	).Scan(&newID)
 	if err != nil {
 		log.Printf("メッセージ保存エラー: %v", err)
 		http.Error(w, "メッセージの保存に失敗しました", http.StatusInternalServerError)
 		return
 	}
 
+	msg.ID = newID // メッセージに新しいIDを追加
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(msg)
 }
