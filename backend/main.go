@@ -159,7 +159,15 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, space_id, username, text, created_at FROM messages ORDER BY created_at ASC")
+	// クエリパラメータから spaceId を取得
+	spaceId := r.URL.Query().Get("spaceId")
+	if spaceId == "" {
+		http.Error(w, "spaceId が指定されていません", http.StatusBadRequest)
+		return
+	}
+
+	// SQL クエリを修正して WHERE 句を追加
+	rows, err := db.Query("SELECT id, space_id, username, text, created_at FROM messages WHERE space_id = $1 ORDER BY created_at ASC", spaceId)
 	if err != nil {
 		http.Error(w, "メッセージの取得に失敗しました", http.StatusInternalServerError)
 		return
@@ -177,6 +185,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, msg)
 	}
 
+	// メッセージを JSON 形式でレスポンス
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
 }
