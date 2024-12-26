@@ -10,29 +10,38 @@ const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [messages, setMessages] = useState([]);
-  const [selectedSpace, setSelectedSpace] = useState(null);
+  const [selectedSpace, setSelectedSpace] = useState(
+    localStorage.getItem('selectedSpace') || null
+  );
   const [showSpaceForm, setShowSpaceForm] = useState(false);
   const { sendMessage, lastMessage, readyState } = useWebSocket(
     token && selectedSpace ? `ws://localhost:8080/ws?spaceId=${selectedSpace}` : null,
     { shouldReconnect: () => true }
   );
 
+  // スペースが変更されたらローカルストレージに保存
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedSpace) return;
-
-      try {
-        const response = await fetch(`http://localhost:8080/messages?spaceId=${selectedSpace}`);
-        const data = await response.json();
-        setMessages(data || []);
-      } catch (error) {
-        console.error('メッセージの取得エラー:', error);
-      }
-    };
-
-    fetchMessages();
+    if (selectedSpace) {
+      localStorage.setItem('selectedSpace', selectedSpace);
+      fetchMessages(selectedSpace); // 選択したスペースに応じたメッセージを取得
+    } else {
+      localStorage.removeItem('selectedSpace');
+      setMessages([]); // 選択解除時にメッセージをクリア
+    }
   }, [selectedSpace]);
 
+  // 選択されたスペースのメッセージを取得
+  const fetchMessages = async (spaceId) => {
+    try {
+      const response = await fetch(`http://localhost:8080/messages?spaceId=${spaceId}`);
+      const data = await response.json();
+      setMessages(data || []);
+    } catch (error) {
+      console.error('メッセージの取得エラー:', error);
+    }
+  };
+
+  // WebSocketで受信したメッセージを処理
   useEffect(() => {
     if (lastMessage !== null) {
       const newMessage = JSON.parse(lastMessage.data);
@@ -112,8 +121,10 @@ const App = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('selectedSpace');
     setToken('');
     setUsername('');
+    setSelectedSpace(null);
   };
 
   const handleSpaceCreated = () => {
