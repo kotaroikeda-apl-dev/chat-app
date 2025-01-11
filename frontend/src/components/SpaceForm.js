@@ -8,7 +8,7 @@ const SpaceForm = ({ onSpaceCreated }) => {
     if (!spaceName.trim()) return;
 
     try {
-      const response = await fetch('http://chat-elb-2056070132.ap-northeast-1.elb.amazonaws.com/api/spaces', {
+      const response = await fetch('https://www.echo-talk.com/api/spaces', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: spaceName }),

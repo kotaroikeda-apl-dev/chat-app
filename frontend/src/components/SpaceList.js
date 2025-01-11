@@ -5,7 +5,7 @@ const SpaceList = ({ onSpaceSelected }) => {
 
   const fetchSpaces = async () => {
     try {
-      const response = await fetch('http://chat-elb-2056070132.ap-northeast-1.elb.amazonaws.com/api/spaces/list');
+      const response = await fetch('https://www.echo-talk.com/api/spaces/list');
       const data = await response.json();
       setSpaces(data || []);
     } catch (error) {
