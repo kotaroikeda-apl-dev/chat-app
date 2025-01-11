@@ -69,6 +69,7 @@ func initDB() {
 
 func setupServer() {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/health", healthCheckHandler)
 	mux.HandleFunc("/register", registerUser)
 	mux.HandleFunc("/login", loginUser)
 	mux.HandleFunc("/messages", getMessages)
@@ -80,7 +81,7 @@ func setupServer() {
 
 	go handleMessages()
 
-	log.Println("サーバーを起動中: http://localhost:8080")
+	log.Println("サーバーを起動中: ポート:8080")
 	err := http.ListenAndServe(":8080", enableCORS(mux))
 	if err != nil {
 		log.Fatal("サーバー起動エラー:", err)
@@ -349,4 +350,10 @@ func createMessage(w http.ResponseWriter, r *http.Request) {
 	msg.ID = newID // メッセージに新しいIDを追加
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(msg)
+}
+
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	// レスポンスとしてステータス200とメッセージを返す
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "ok"}`))
 }

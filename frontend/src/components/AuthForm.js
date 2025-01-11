@@ -9,8 +9,8 @@ const AuthForm = ({ onAuthSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const url = isLogin
-      ? 'http://localhost:8080/login'
-      : 'http://localhost:8080/register';
+      ? 'http://chat-elb-2056070132.ap-northeast-1.elb.amazonaws.com/login'
+      : 'http://chat-elb-2056070132.ap-northeast-1.elb.amazonaws.com/register';
 
     try {
       const response = await fetch(url, {
