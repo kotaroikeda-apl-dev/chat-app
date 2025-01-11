@@ -70,14 +70,14 @@ func initDB() {
 func setupServer() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthCheckHandler)
-	mux.HandleFunc("/register", registerUser)
-	mux.HandleFunc("/login", loginUser)
-	mux.HandleFunc("/messages", getMessages)
-	mux.HandleFunc("/delete", deleteMessage)
-	mux.HandleFunc("/ws", handleConnections)
-	mux.HandleFunc("/spaces", createSpace)
-	mux.HandleFunc("/spaces/list", getSpaces)
-	mux.HandleFunc("/messages/create", createMessage)
+	mux.HandleFunc("/api/register", registerUser)
+	mux.HandleFunc("/api/login", loginUser)
+	mux.HandleFunc("/api/messages", getMessages)
+	mux.HandleFunc("/api/delete", deleteMessage)
+	mux.HandleFunc("/api/ws", handleConnections)
+	mux.HandleFunc("/api/spaces", createSpace)
+	mux.HandleFunc("/api/spaces/list", getSpaces)
+	mux.HandleFunc("/api/messages/create", createMessage)
 
 	go handleMessages()
 
