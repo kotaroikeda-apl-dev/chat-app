@@ -8,7 +8,7 @@ const SpaceForm = ({ onSpaceCreated }) => {
     if (!spaceName.trim()) return;
 
     try {
-      const response = await fetch('https://www.echo-talk.com/api/spaces', {
+      const response = await fetch(`${process.env.REACT_APP_URL_DOMAIN}/api/spaces`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: spaceName }),

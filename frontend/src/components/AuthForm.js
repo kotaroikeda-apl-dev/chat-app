@@ -9,8 +9,8 @@ const AuthForm = ({ onAuthSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const url = isLogin
-      ? 'https://www.echo-talk.com/api/login'
-      : 'https://www.echo-talk.com/api/register';
+      ? `${process.env.REACT_APP_URL_DOMAIN}/api/login`
+      : `${process.env.REACT_APP_URL_DOMAIN}/api/register`;
 
     try {
       const response = await fetch(url, {

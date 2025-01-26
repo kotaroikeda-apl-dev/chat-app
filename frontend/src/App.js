@@ -33,7 +33,7 @@ const App = () => {
   // 選択されたスペースのメッセージを取得
   const fetchMessages = async (spaceId) => {
     try {
-      const response = await fetch(`https://www.echo-talk.com/api/messages?spaceId=${spaceId}`);
+      const response = await fetch(`${process.env.REACT_APP_URL_DOMAIN}/api/messages?spaceId=${spaceId}`);
       const data = await response.json();
       setMessages(data || []);
     } catch (error) {
@@ -63,7 +63,7 @@ const App = () => {
     }
 
     try {
-      const response = await fetch('https://www.echo-talk.com/api/messages/create', {
+      const response = await fetch(`${process.env.REACT_APP_URL_DOMAIN}/api/messages/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ const App = () => {
     try {
       setMessages((prev) => prev.filter((message) => message.id !== id));
 
-      const response = await fetch(`https://www.echo-talk.com/api/delete?id=${id}&spaceId=${selectedSpace}`, {
+      const response = await fetch(`${process.env.REACT_APP_URL_DOMAIN}/api/delete?id=${id}&spaceId=${selectedSpace}`, {
         method: 'DELETE',
       });
 
