@@ -18,8 +18,7 @@ func NewUserController(service *services.UserService) *UserController {
 
 // ユーザー登録API
 func (c *UserController) RegisterUser(ctx *gin.Context) {
-	var user models.User // `models.User` を使用
-
+	var user models.User
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "リクエストのパースに失敗しました"})
 		return
@@ -34,17 +33,14 @@ func (c *UserController) RegisterUser(ctx *gin.Context) {
 }
 
 func (c *UserController) LoginUser(ctx *gin.Context) {
-	var user struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var user models.User
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "リクエストのパースに失敗しました"})
 		return
 	}
 
-	token, err := c.Service.AuthenticateUser(user.Username, user.Password)
+	token, err := c.Service.AuthenticateUser(user)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return

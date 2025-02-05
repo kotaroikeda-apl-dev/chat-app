@@ -29,19 +29,19 @@ func (s *UserService) RegisterUser(user models.User) error {
 	return s.Repo.CreateUser(user)
 }
 
-func (s *UserService) AuthenticateUser(username, password string) (string, error) {
-	storedPassword, err := s.Repo.GetPasswordByUsername(username)
+func (s *UserService) AuthenticateUser(user models.User) (string, error) {
+	storedPassword, err := s.Repo.GetPasswordByUsername(user.Username)
 	if err != nil {
 		return "", errors.New("認証失敗")
 	}
 
-	if storedPassword != password {
+	if storedPassword != user.Password {
 		return "", errors.New("認証失敗")
 	}
 
 	// トークンの作成
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": username,
+		"username": user.Username,
 		"exp":      time.Now().Add(time.Hour * 1).Unix(),
 	})
 	tokenString, err := token.SignedString([]byte("your-secret-key"))
