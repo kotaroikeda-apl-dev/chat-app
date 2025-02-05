@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"chat/models"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +19,7 @@ func NewMessageRepository(db *gorm.DB) *MessageRepository {
 func (repo *MessageRepository) CreateMessage(msg models.Message) (int, error) {
 	result := repo.DB.Create(&msg)
 	if result.Error != nil {
+		fmt.Println("DBエラー:", result.Error)
 		return 0, result.Error
 	}
 	return msg.ID, nil

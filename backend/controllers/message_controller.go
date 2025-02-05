@@ -34,16 +34,17 @@ func (c *MessageController) GetMessages(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, messages)
 }
 
+// メッセージ作成API
 func (c *MessageController) CreateMessage(ctx *gin.Context) {
-	var msg models.Message
+	var msg models.Message // `models.Message` を使用
+
 	if err := ctx.ShouldBindJSON(&msg); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "リクエストのパースに失敗しました"})
 		return
 	}
-
 	id, err := c.Service.CreateMessage(msg)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "メッセージ作成失敗"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "メッセージの保存に失敗しました"})
 		return
 	}
 
