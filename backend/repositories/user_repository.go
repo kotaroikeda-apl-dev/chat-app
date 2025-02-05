@@ -19,9 +19,19 @@ func (repo *UserRepository) CreateUser(user models.User) error {
 	return repo.DB.Create(&user).Error
 }
 
-// パスワード取得
-func (repo *UserRepository) GetPassword(username string) (string, error) {
+// ユーザー取得
+func (repo *UserRepository) GetUserByUsername(username string) (models.User, error) {
 	var user models.User
 	err := repo.DB.Where("username = ?", username).First(&user).Error
-	return user.Password, err
+	return user, err
+}
+
+// パスワード取得
+func (repo *UserRepository) GetPasswordByUsername(username string) (string, error) {
+	var user models.User
+	err := repo.DB.Where("username = ?", username).First(&user).Error
+	if err != nil {
+		return "", err
+	}
+	return user.Password, nil
 }
