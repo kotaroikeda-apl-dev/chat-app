@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"chat/models"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -32,6 +33,15 @@ func (repo *MessageRepository) GetMessages(spaceId int) ([]models.Message, error
 	return messages, err
 }
 
-func (repo *MessageRepository) DeleteMessage(messageID, spaceID int) error {
-	return repo.DB.Where("id = ? AND space_id = ?", messageID, spaceID).Delete(&models.Message{}).Error
+func (r *MessageRepository) DeleteMessage(messageID, spaceID int) error {
+	result := r.DB.Delete(&models.Message{}, "id = ? AND space_id = ?", messageID, spaceID)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("メッセージが見つかりませんでした")
+	}
+
+	return nil
 }

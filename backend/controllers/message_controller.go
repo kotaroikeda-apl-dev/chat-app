@@ -3,6 +3,8 @@ package controllers
 import (
 	"chat/models"
 	"chat/services"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -36,40 +38,39 @@ func (c *MessageController) GetMessages(ctx *gin.Context) {
 
 // メッセージ作成API
 func (c *MessageController) CreateMessage(ctx *gin.Context) {
+	fmt.Println("メッセージ作成エンドポイントにリクエストが来ました")
+
 	var msg models.Message // `models.Message` を使用
 
 	if err := ctx.ShouldBindJSON(&msg); err != nil {
+		log.Printf("リクエストパースエラー: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "リクエストのパースに失敗しました"})
 		return
 	}
+	log.Printf("受信したメッセージ: %+v", msg)
 	id, err := c.Service.CreateMessage(msg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "メッセージの保存に失敗しました"})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"message": "メッセージ作成成功", "id": id})
+	msg.ID = id
+	ctx.JSON(http.StatusCreated, msg)
 }
 
 func (c *MessageController) DeleteMessage(ctx *gin.Context) {
-	messageIDStr := ctx.Query("id")
-	spaceIDStr := ctx.Query("spaceId")
+	messageID, err1 := strconv.Atoi(ctx.Query("id"))
+	spaceID, err2 := strconv.Atoi(ctx.Query("spaceId"))
 
-	messageID, err := strconv.Atoi(messageIDStr)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "無効なメッセージID"})
+	if err1 != nil || err2 != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "メッセージIDまたはスペースIDが無効です"})
 		return
 	}
 
-	spaceID, err := strconv.Atoi(spaceIDStr)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "無効なスペースID"})
-		return
-	}
+	log.Printf("受信した削除リクエスト - メッセージID: %d, スペースID: %d", messageID, spaceID)
 
-	err = c.Service.DeleteMessage(messageID, spaceID)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "メッセージ削除に失敗しました"})
+	if err := c.Service.DeleteMessage(messageID, spaceID); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

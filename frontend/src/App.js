@@ -101,7 +101,7 @@ const App = () => {
     try {
       setMessages((prev) => prev.filter((message) => message.id !== id));
 
-      const response = await fetch(`${process.env.REACT_APP_URL_DOMAIN}/api/delete?id=${id}&spaceId=${selectedSpace}`, {
+      const response = await fetch(`${process.env.REACT_APP_URL_DOMAIN}/api/messages?id=${id}&spaceId=${selectedSpace}`, {
         method: 'DELETE',
       });
 

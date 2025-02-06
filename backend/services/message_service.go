@@ -21,7 +21,7 @@ func (s *MessageService) GetMessages(spaceId int) ([]models.Message, error) {
 // メッセージ登録
 func (s *MessageService) CreateMessage(msg models.Message) (int, error) {
 	// 入力値のバリデーション
-	if msg.Text == "" || msg.Username == "" || msg.SpaceID == "0" {
+	if msg.Text == "" || msg.Username == "" || msg.SpaceID == 0 {
 		return 0, errors.New("メッセージまたはユーザー名が空です")
 	}
 
@@ -30,5 +30,8 @@ func (s *MessageService) CreateMessage(msg models.Message) (int, error) {
 }
 
 func (s *MessageService) DeleteMessage(messageID, spaceID int) error {
+	if messageID == 0 || spaceID == 0 {
+		return errors.New("メッセージIDまたはスペースIDが無効です")
+	}
 	return s.Repo.DeleteMessage(messageID, spaceID)
 }

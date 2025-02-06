@@ -3,7 +3,6 @@ package services
 import (
 	"chat/models"
 	"chat/repositories"
-	"errors"
 )
 
 type SpaceService struct {
@@ -16,9 +15,6 @@ func NewSpaceService(repo *repositories.SpaceRepository) *SpaceService {
 
 // スペースを作成
 func (s *SpaceService) CreateSpace(name string) error {
-	if len(name) > 10 {
-		return errors.New("スペース名は10文字以内にしてください")
-	}
 	return s.Repo.CreateSpace(name)
 }
 
