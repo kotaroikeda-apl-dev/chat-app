@@ -6,28 +6,28 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserRepository struct {
+type userRepository struct {
 	DB *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{DB: db}
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &userRepository{DB: db}
 }
 
 // ユーザー作成
-func (repo *UserRepository) CreateUser(user models.User) error {
+func (repo *userRepository) CreateUser(user models.User) error {
 	return repo.DB.Create(&user).Error
 }
 
 // ユーザー取得
-func (repo *UserRepository) GetUserByUsername(username string) (models.User, error) {
+func (repo *userRepository) GetUserByUsername(username string) (models.User, error) {
 	var user models.User
 	err := repo.DB.Where("username = ?", username).First(&user).Error
 	return user, err
 }
 
 // パスワード取得
-func (repo *UserRepository) GetPasswordByUsername(username string) (string, error) {
+func (repo *userRepository) GetPasswordByUsername(username string) (string, error) {
 	var user models.User
 	err := repo.DB.Where("username = ?", username).First(&user).Error
 	if err != nil {
