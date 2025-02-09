@@ -9,16 +9,16 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-type UserService struct {
-	Repo *repositories.UserRepository
+type userService struct {
+	Repo repositories.UserRepository
 }
 
-func NewUserService(repo *repositories.UserRepository) *UserService {
-	return &UserService{Repo: repo}
+func NewUserService(repo repositories.UserRepository) UserService {
+	return &userService{Repo: repo}
 }
 
 // ユーザー登録
-func (s *UserService) RegisterUser(user models.User) error {
+func (s *userService) RegisterUser(user models.User) error {
 	// すでにユーザーが存在するか確認
 	existingUser, err := s.Repo.GetUserByUsername(user.Username)
 	if err == nil && existingUser.Username != "" {
@@ -29,7 +29,7 @@ func (s *UserService) RegisterUser(user models.User) error {
 	return s.Repo.CreateUser(user)
 }
 
-func (s *UserService) AuthenticateUser(user models.User) (string, error) {
+func (s *userService) AuthenticateUser(user models.User) (string, error) {
 	storedPassword, err := s.Repo.GetPasswordByUsername(user.Username)
 	if err != nil {
 		return "", errors.New("認証失敗")

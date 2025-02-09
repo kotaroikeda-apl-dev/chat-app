@@ -6,20 +6,20 @@ import (
 	"errors"
 )
 
-type MessageService struct {
+type messageService struct {
 	repo repositories.MessageRepository
 }
 
-func NewMessageService(repo repositories.MessageRepository) *MessageService {
-	return &MessageService{repo: repo}
+func NewMessageService(repo repositories.MessageRepository) MessageService {
+	return &messageService{repo: repo}
 }
 
-func (s *MessageService) GetMessages(spaceId int) ([]models.Message, error) {
+func (s *messageService) GetMessages(spaceId int) ([]models.Message, error) {
 	return s.repo.GetMessages(spaceId)
 }
 
 // メッセージ登録
-func (s *MessageService) CreateMessage(msg models.Message) (int, error) {
+func (s *messageService) CreateMessage(msg models.Message) (int, error) {
 	// 入力値のバリデーション
 	if msg.Text == "" || msg.Username == "" || msg.SpaceID == 0 {
 		return 0, errors.New("メッセージまたはユーザー名が空です")
@@ -29,7 +29,7 @@ func (s *MessageService) CreateMessage(msg models.Message) (int, error) {
 	return s.repo.CreateMessage(msg)
 }
 
-func (s *MessageService) DeleteMessage(messageID, spaceID int) error {
+func (s *messageService) DeleteMessage(messageID, spaceID int) error {
 	if messageID == 0 || spaceID == 0 {
 		return errors.New("メッセージIDまたはスペースIDが無効です")
 	}
