@@ -8,16 +8,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type WebSocketService struct {
-	Repo      *repositories.MessageRepository
+type webSocketService struct {
+	Repo      repositories.MessageRepository
 	Clients   map[*websocket.Conn]bool
 	Broadcast chan models.Message
 	Mutex     sync.Mutex
 	Upgrader  websocket.Upgrader
 }
 
-func NewWebSocketService(repo *repositories.MessageRepository) *WebSocketService {
-	return &WebSocketService{
+func NewWebSocketService(repo repositories.MessageRepository) WebSocketService {
+	return &webSocketService{
 		Repo:      repo,
 		Clients:   make(map[*websocket.Conn]bool),
 		Broadcast: make(chan models.Message),
@@ -25,27 +25,27 @@ func NewWebSocketService(repo *repositories.MessageRepository) *WebSocketService
 }
 
 // クライアントを追加
-func (s *WebSocketService) AddClient(ws *websocket.Conn) {
+func (s *webSocketService) AddClient(ws *websocket.Conn) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 	s.Clients[ws] = true
 }
 
 // クライアントを削除
-func (s *WebSocketService) RemoveClient(ws *websocket.Conn) {
+func (s *webSocketService) RemoveClient(ws *websocket.Conn) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 	delete(s.Clients, ws)
 }
 
 // **メッセージをDBに保存**
-func (s *WebSocketService) SaveMessage(msg models.Message) error {
+func (s *webSocketService) SaveMessage(msg models.Message) error {
 	_, err := s.Repo.CreateMessage(msg)
 	return err
 }
 
 // **メッセージを全クライアントにブロードキャスト**
-func (s *WebSocketService) BroadcastMessage(msg models.Message) {
+func (s *webSocketService) BroadcastMessage(msg models.Message) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 
@@ -58,7 +58,7 @@ func (s *WebSocketService) BroadcastMessage(msg models.Message) {
 	}
 }
 
-func (s *WebSocketService) HandleMessages() {
+func (s *webSocketService) HandleMessages() {
 	for {
 		// メッセージをチャネルから受け取る
 		msg := <-s.Broadcast
@@ -72,4 +72,8 @@ func (s *WebSocketService) HandleMessages() {
 			}
 		}
 	}
+}
+
+func (s *webSocketService) GetClients() map[*websocket.Conn]bool {
+	return s.Clients
 }
