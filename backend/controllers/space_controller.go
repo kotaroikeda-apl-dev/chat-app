@@ -8,10 +8,10 @@ import (
 )
 
 type SpaceController struct {
-	Service *services.SpaceService
+	Service services.SpaceService
 }
 
-func NewSpaceController(service *services.SpaceService) *SpaceController {
+func NewSpaceController(service services.SpaceService) *SpaceController {
 	return &SpaceController{Service: service}
 }
 

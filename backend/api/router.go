@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(db *gorm.DB) (*gin.Engine, *services.WebSocketService) {
+func RegisterRoutes(db *gorm.DB) (*gin.Engine, services.WebSocketService) {
 	r := gin.Default()
 
 	// CORS ミドルウェアを適用

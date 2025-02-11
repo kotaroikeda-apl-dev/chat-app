@@ -12,10 +12,10 @@ import (
 )
 
 type MessageController struct {
-	Service *services.MessageService
+	Service services.MessageService
 }
 
-func NewMessageController(service *services.MessageService) *MessageController {
+func NewMessageController(service services.MessageService) *MessageController {
 	return &MessageController{Service: service}
 }
 

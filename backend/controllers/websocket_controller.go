@@ -11,11 +11,11 @@ import (
 )
 
 type WebSocketController struct {
-	Service  *services.WebSocketService
+	Service  services.WebSocketService
 	Upgrader websocket.Upgrader
 }
 
-func NewWebSocketController(service *services.WebSocketService) *WebSocketController {
+func NewWebSocketController(service services.WebSocketService) *WebSocketController {
 	return &WebSocketController{
 		Service: service,
 		Upgrader: websocket.Upgrader{
